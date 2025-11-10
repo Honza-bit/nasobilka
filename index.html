@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+  <title>Násobilkový tréning (jen násobky)</title>
+  <style>
+    :root{
+      --bg: linear-gradient(135deg,#0ea5e9 0%, #8b5cf6 50%, #f43f5e 100%);
+      --card: rgba(255,255,255,0.15);
+      --card-border: rgba(255,255,255,0.35);
+      --text: #0b1020;
+      --text-inv: #ffffff;
+      --accent: #22c55e;
+      --warn: #ef4444;
+      --muted: rgba(255,255,255,0.7);
+    }
+    *{box-sizing:border-box; -webkit-tap-highlight-color: transparent}
+    html,body{height:100%;}
+    body{
+      margin:0; font-family: ui-rounded, system-ui, -apple-system, Segoe UI, Roboto, Cantarell, Noto Sans, Ubuntu, "Helvetica Neue", Arial, "Apple Color Emoji","Segoe UI Emoji";
+      background: var(--bg);
+      color: var(--text-inv);
+      display:flex; align-items:center; justify-content:center;
+    }
+    .app{
+      width:min(880px, 96vw);
+      min-height: 92vh;
+      display:flex; flex-direction:column; gap:16px; padding:16px;
+    }
+    header{display:flex; align-items:center; justify-content:space-between}
+    h1{font-size: clamp(20px, 5vw, 34px); margin:0; letter-spacing:0.3px}
+    .pill{backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); border:1px solid var(--card-border); background:var(--card); border-radius:999px; padding:8px 14px; font-weight:600}
+
+    .card{
+      flex:1; display:flex; flex-direction:column; justify-content:space-between;
+      border: 1px solid var(--card-border); background: var(--card); backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px); border-radius: 24px; padding: 18px; box-shadow: 0 10px 30px rgba(0,0,0,.25);
+    }
+
+    .row{display:flex; gap:12px; align-items:center}
+    .grow{flex:1}
+
+    .question{
+      text-align:center; font-size: clamp(36px, 12vw, 64px); font-weight:800; letter-spacing:1px;
+      padding: 18px 12px; border-radius: 18px; background: rgba(255,255,255,0.12); border:1px solid rgba(255,255,255,0.25);
+      user-select:none;
+    }
+    .input{
+      display:flex; justify-content:center; gap:10px; align-items:center; margin-top:4px;
+    }
+    .answer{
+      min-width: 120px; text-align:center; font-weight:800; font-size: clamp(24px, 8vw, 40px);
+      padding: 10px 16px; border-radius: 14px; border:1px dashed rgba(255,255,255,0.45);
+      background: rgba(255,255,255,0.12);
+    }
+
+    .keypad{
+      display:grid; grid-template-columns: repeat(3, 1fr); gap:10px; margin-top: 12px;
+    }
+    .btn{
+      border:none; color: var(--text-inv); font-weight:800; font-size: clamp(18px, 6vw, 28px); padding: 14px 10px; border-radius: 16px;
+      background: rgba(255,255,255,0.14); border:1px solid rgba(255,255,255,0.3); box-shadow: 0 6px 16px rgba(0,0,0,0.2);
+      transition: transform .06s ease, filter .2s ease, background .2s ease;
+    }
+    .btn:active{ transform: translateY(2px) scale(0.98) }
+    .btn.small{font-size:14px; font-weight:700; padding:10px 12px; border-radius:12px}
+
+    .ok{ background: rgba(34,197,94,.25); border-color: rgba(34,197,94,.65) }
+    .bad{ background: rgba(239,68,68,.28); border-color: rgba(239,68,68,.7) }
+    .ghost{ background: rgba(255,255,255,0.08) }
+
+    .bar{ height: 14px; width:100%; background: rgba(255,255,255,0.18); border-radius: 999px; border:1px solid rgba(255,255,255,0.3); overflow:hidden }
+    .bar>span{ display:block; height:100%; background: linear-gradient(90deg, #22c55e, #f59e0b); width:0% }
+
+    .stats{
+      display:grid; grid-template-columns: repeat(6, 1fr); gap:6px; margin-top:10px;
+    }
+    .cell{
+      text-align:center; padding:6px 0; border-radius: 10px; font-size: 14px; font-weight:700;
+      background: rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.22)
+    }
+    .cell[data-level="3"]{ background: rgba(34,197,94,.25); border-color: rgba(34,197,94,.6)}
+    .cell[data-level="2"]{ background: rgba(250,204,21,.3); border-color: rgba(250,204,21,.7)}
+    .cell[data-level="1"]{ background: rgba(239,68,68,.28); border-color: rgba(239,68,68,.7)}
+
+    .footer{ display:flex; align-items:center; justify-content:space-between; gap:10px; margin-top:10px; flex-wrap:wrap }
+    .hint{ font-size: 14px; color: var(--muted)}
+
+    .modal{ position:fixed; inset:0; display:none; align-items:center; justify-content:center; padding:16px }
+    .modal.active{ display:flex }
+    .sheet{ width:min(680px, 96vw); background: var(--card); border:1px solid var(--card-border); border-radius: 20px; padding: 16px; backdrop-filter: blur(10px) }
+    .sheet h2{ margin: 0 0 10px 0 }
+    .field{ display:flex; align-items:center; justify-content:space-between; gap:10px; padding:8px 0 }
+    .range{ width: 60% }
+
+    .flex{ display:flex; gap:8px; align-items:center }
+    .sep{ height:1px; background: rgba(255,255,255,0.3); margin:10px 0 }
+
+    @media (min-width: 700px){
+      .keypad{ grid-template-columns: repeat(4, 1fr) }
+    }
+  </style>
+</head>
+<body>
+  <div class="app" id="app">
+    <header>
+      <h1>✨ Násobilkový tréning</h1>
+      <div class="flex">
+        <button class="pill btn small ghost" id="btnStats">📈 Přehled</button>
+        <button class="pill btn small ghost" id="btnSettings">⚙️ Nastavení</button>
+      </div>
+    </header>
+
+    <div class="card">
+      <div>
+        <div class="row" style="justify-content:space-between">
+          <div class="pill" id="modePill">Mix × do 10</div>
+          <div class="pill" id="streakPill">🔥 Série: <span id="streak">0</span></div>
+        </div>
+        <div class="question" id="question">7 × 8 = ?</div>
+        <div class="input">
+          <div class="answer" id="answer">…</div>
+        </div>
+        <div class="keypad" id="keypad"></div>
+      </div>
+
+      <div class="footer">
+        <div class="bar"><span id="progress" style="width:0%"></span></div>
+        <div class="hint" id="hint">Tip: Dlouhé podržení ⌫ vymaže celé číslo.</div>
+      </div>
+    </div>
+
+    <div class="modal" id="settingsModal" aria-hidden="true">
+      <div class="sheet">
+        <h2>⚙️ Nastavení</h2>
+        <div class="field">
+          <label>Maximální násobek (1–12)</label>
+          <input type="range" min="4" max="12" value="10" id="maxFactor" class="range">
+          <span id="maxFactorVal">10</span>
+        </div>
+        <div class="field">
+          <label>Rychlý režim (časový tlak)</label>
+          <div class="flex">
+            <button class="btn small" data-speed="off">Vypnuto</button>
+            <button class="btn small ghost" data-speed="normal">30 s</button>
+            <button class="btn small ghost" data-speed="fast">15 s</button>
+            <button class="btn small ghost" data-speed="turbo">5 s</button>
+          </div>
+        </div>
+        <div class="field">
+          <label>Směrování příkladů</label>
+          <div class="flex">
+            <button class="btn small" data-order="mix">Přeskáčku</button>
+            <button class="btn small ghost" data-order="single">Jedna tabulka</button>
+          </div>
+        </div>
+        <div class="field" id="singleRow" style="display:none">
+          <label>Tabulka (2–12)</label>
+          <input type="range" min="2" max="12" value="5" id="tableOnly" class="range">
+          <span id="tableOnlyVal">5</span>
+        </div>
+        <div class="sep"></div>
+        <div class="flex" style="justify-content:space-between">
+          <button class="btn small ghost" id="resetProgress">🧽 Vynulovat pokrok</button>
+          <div class="flex">
+            <button class="btn small ghost" id="closeSettings">Zavřít</button>
+            <button class="btn small" id="saveSettings">Uložit</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal" id="statsModal" aria-hidden="true">
+      <div class="sheet">
+        <h2>📈 Přehled & opakování</h2>
+        <div class="stats" id="statsGrid"></div>
+        <div class="sep"></div>
+        <div class="flex" style="justify-content:space-between">
+          <div class="hint">Zelená = umím, žlutá = tak tak, červená = procvičit.</div>
+          <button class="btn small" id="closeStats">Zavřít</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+  // původní kód zůstává stejný až po funkci startTimer()
+  let timerId=null, timeLeft=0;
+  function startTimer(){
+    if(timerId) { clearInterval(timerId); timerId=null; document.body.style.setProperty('--timer','0') }
+    const mode = settings.speed;
+    if(mode==='off') return;
+    timeLeft = mode==='turbo'?5:(mode==='fast'?15:30);
+    const total=timeLeft;
+    timerId = setInterval(()=>{
+      timeLeft--; if(timeLeft<=0){ clearInterval(timerId); timerId=null; updateWeights(state.a, state.b, false); state.streak=0; streakEl.textContent='0'; qEl.textContent=`${state.a} × ${state.b} = ${state.a*state.b}`; aEl.classList.add('bad'); vibrate(60); setTimeout(()=>newTask(),650); return; }
+      const pct = Math.round(100*(1-timeLeft/total));
+      pEl.style.width = pct + '%';
+    },1000);
+  }
+  renderKeypad(); newTask();
+  </script>
+</body>
+</html>
