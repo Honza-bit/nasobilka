@@ -56,7 +56,10 @@
     }
 
     .keypad{
-      display:grid; grid-template-columns: repeat(3, 1fr); gap:10px; margin-top: 12px;
+      display:grid;
+      grid-template-columns: repeat(3, 1fr); /* vždy 3 sloupce */
+      gap:10px;
+      margin-top: 12px;
     }
     .btn{
       border:none; color: var(--text-inv); font-weight:800; font-size: clamp(18px, 6vw, 28px); padding: 14px 10px; border-radius: 16px;
@@ -96,10 +99,6 @@
 
     .flex{ display:flex; gap:8px; align-items:center }
     .sep{ height:1px; background: rgba(255,255,255,0.3); margin:10px 0 }
-
-    @media (min-width: 700px){
-      .keypad{ grid-template-columns: repeat(4, 1fr) }
-    }
   </style>
 </head>
 <body>
@@ -189,10 +188,8 @@
   // --- Pomocné funkce ---
   const vibrate = (ms=20)=>{ if ("vibrate" in navigator) try{ navigator.vibrate(ms) }catch(_){} }
   const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
-  const shuffle = arr => arr.sort(()=>Math.random()-0.5);
 
   // --- Model učení s opakováním chyb ---
-  // Každý příklad (a*b bez ohledu na pořadí) má váhu. Chyba -> vyšší váha -> častěji padá.
   const STORAGE_KEY = 'mulTrainer.v1';
   const defaultSettings = { maxFactor:10, order:'mix', tableOnly:5, speed:'off' };
   let settings = load('settings') || defaultSettings;
@@ -274,16 +271,21 @@
   const settingsModal = document.getElementById('settingsModal');
   const statsModal = document.getElementById('statsModal');
 
-  // build keypad
-  const keys = ['7','8','9','⌫', '4','5','6','➜', '1','2','3','', '0'];
+  // build keypad – stabilní 3×4
+  const keys = ['7','8','9',
+                '4','5','6',
+                '1','2','3',
+                '⌫','0','➜'];
+
   function renderKeypad(){
     keypadEl.innerHTML = '';
     keys.forEach(k=>{
       const b = document.createElement('button');
       b.className = 'btn';
       b.textContent = k;
-      if(k==='') { b.classList.add('ghost'); b.disabled=true }
+
       if(k==='⌫' || k==='➜') b.classList.add('ghost');
+
       // dlouhé podržení Backspace = vymazat vše
       if(k==='⌫'){
         let hold;
@@ -292,11 +294,11 @@
       }
       b.addEventListener('click', ()=>onKey(k));
       keypadEl.appendChild(b);
-    })
+    });
   }
 
   function onKey(k){
-    if(k==='') return;
+    if(!k) return;
     vibrate(12);
     if(k==='⌫'){
       if(state.answer.length>0){ state.answer = state.answer.slice(0,-1) }
